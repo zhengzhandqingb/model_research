@@ -1,0 +1,28 @@
+[loggers]
+keys=root,keeplogin,rollout,requests
+
+[logger_root]
+level=INFO
+handlers=stdout,dailyfile
+
+[handlers]
+keys=stdout,dailyfile
+
+[handler_stdout]
+class=StreamHandler
+level=INFO
+formatter=simpleform
+args=(sys.stdout,)
+
+[handler_dailyfile]
+class=handlers.TimedRotatingFileHandler
+level=INFO
+formatter=simpleform
+args=('log/model_research.log','D',1,5)
+
+[formatters]
+keys=simpleform
+
+[formatter_simpleform]
+format=%(asctime)s %(filename)s [%(threadName)s] [%(levelname)s] [%(relativeCreated)d] - %(message)s
+datefmt=%a, %d %b %Y %H:%M:%S
