@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script language="JavaScript" src="../static/mydate.js"></script>
+</head>
+    <script type="text/javascript">
+        function getNowFormatDate()
+        {
+            var date = new Date();
+            var seperator1 = "-";
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var strDate = date.getDate();
+            if (month >= 1 && month <= 9) {
+                month = "0" + month;
+            }
+            if (strDate >= 0 && strDate <= 9) {
+                strDate = "0" + strDate;
+            }
+            var currentdate = year + seperator1 + month + seperator1 + strDate;
+            return currentdate;
+        }
+        function check()
+        {
+            var startTimeStr = document.getElementById("startId").value;
+            var endTimeStr = document.getElementById("endId").value;
+            var weekStr = document.getElementById("weekId").value;
+            var re = /^[1-9]+[0-9]*]*$/;
+            var dateTimeNow = getNowFormatDate();
+            if(startTimeStr == null || startTimeStr == "" || endTimeStr == null || endTimeStr == ""){
+                alert("开始日期和结束日期不能为空！！");
+                return false;
+            }
+            if(startTimeStr == dateTimeNow){
+                alert("开始日期不能等于当前日期！！");
+                return false;
+            }
+            if(startTimeStr == endTimeStr || startTimeStr > endTimeStr){
+                alert("开始日期必须小于结束日期！！");
+                return false;
+            }
+            if(weekStr == null || weekStr == "" || !re.test(weekStr)){
+                alert("间隔的周数必须为正整数且不能为空！！");
+                return false;
+            }
+            return true;
+
+        }
+    </script>
+    <form action="/portfolio_map" method="post" onsubmit="return check();" >
+        <div id="selectDivId" style="height:20px;border:1px solid #ccc;padding:10px;">
+            模型类型：
+            <select name="ModuleType" id="selectModuleId">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+            </select>
+            &nbsp;&nbsp;
+            开始日期：<input id="startId" type="text" name="startTime" onfocus="MyCalendar.SetDate(this)" readonly/>&nbsp;&nbsp;
+            结束日期：<input id="endId" type="text" name="endTime" onfocus="MyCalendar.SetDate(this)" readonly/>&nbsp;&nbsp;
+            间隔：<input id="weekId" type="text" name="weekDual" value="">&nbsp;周&nbsp;&nbsp;
+            <button type="submit">确定</button>
+        </div>
+    </form>
+
+    <div id="assetStrID" style="display: none;">
+        {{assets}}
+    </div>
+     <div id="dateTimeID" style="display: none;">
+        {{dateTime}}
+    </div>
+    <div id="weightsID" style="display: none">
+        {% for weight in weights %}
+            {% for singleWeight in weight %}
+                {{singleWeight}}
+            {% endfor %}
+        {% endfor %}
+    </div>
+    <!--<div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>-->
+    <div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>
+    <script src="../static/echarts.js"></script>
+    <script type="text/javascript">
+
+        var assetStr = document.getElementById("assetStrID").innerHTML;
+        var assetWeights = document.getElementById("weightsID").innerHTML;
+        var dateTimeStr = document.getElementById("dateTimeID").innerHTML;
+        var num;
+        num = assetWeights.match(/\d+(\.\d+)?/g);
+        assetStr = eval(assetStr);
+//        assetStr2 = [];
+//        for(var i=0;i<assetStr.length;i++){
+//            assetStr2.push(String(assetStr[i]))
+//        }
+        dateTimeStr = eval(dateTimeStr);
+        var weightNum = new Array();
+        for(var k=0;k<assetStr.length;k++)
+        {
+            weightNum[k]=new Array();
+            for(var j=0;j<dateTimeStr.length;j++)
+            {
+                weightNum[k][j]=0.0;
+            }
+        }
+        for(var i=0;i<assetStr.length;i++)
+        {
+            for(var j=0;j<dateTimeStr.length;j++)
+            {
+                weightNum[i][j] = num[i + j * assetStr.length]
+            }
+        }
+
+        // 基于准备好的dom，初始化echarts图表
+        var myChart = echarts.init(document.getElementById('main'));
+
+        var weightArray = [], arr = {};
+        for(var i=0;i<assetStr.length;i++){
+            arr = {};
+            arr.name = assetStr[i];
+            arr.type = 'line';
+            arr.stack = '总量'+ (i+1);
+            weightFlot = [];
+            for(var j=0;j<dateTimeStr.length;j++)
+            {
+                weightFlot.push(parseFloat(weightNum[i][j]).toFixed(4));
+            }
+            arr.data = weightFlot;
+            weightArray.push(arr);
+        }
+        console.log(assetStr);
+        console.log(dateTimeStr);
+        console.log(weightArray);
+
+        myChart.setOption(option = {
+            title: {
+                text: '资产权重分布图'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data:assetStr
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: dateTimeStr
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: weightArray
+        });
+    </script>
+</body>
+</html>
