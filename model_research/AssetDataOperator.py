@@ -48,19 +48,21 @@ class AssetDataOperator(object):
                 date1 = date2
                 i = i + 1
                 continue
-            else: #如果不在同一周
+            else: # 如果不在同一周
                 asset_weekend_date[date1] = asset_data[i-1][1]
                 date1 = date2
             i = i + 1
         date2_1 = self.date_operator.string_to_date(date2)
         if date2_1.weekday() == 5:  # 如果最后一天是星期五
-             asset_weekend_date[date2] = asset_data[date2]
+             asset_weekend_date[date2] = asset_data[len(asset_data)-1][1]
         return asset_weekend_date
 
-    # 计算机资产收益率
+    # 计算机资产收益率, 参数类型是字典dict
     def compute_asset_return_rate(self, asset_data):
         asset_rate = dict()
-        asset_data = sorted(asset_data.items())
+        # 如果资产数据是dict类型的话，需要对其进行排序；如果是list，就不需要。
+        if type(asset_data) == dict:
+            asset_data = sorted(asset_data.items())
         i = 0
         former_value = float(asset_data[i][1])
         i = i + 1
@@ -85,6 +87,8 @@ class AssetDataOperator(object):
          asset_data2 = sorted(asset_data2.items())
          i = 0
          j = 0
+         position2 = []
+         position1 = []
          while i < len(asset_data1) and j < len(asset_data2):
              date1 = asset_data1[i][0]
              date2 = asset_data2[j][0]
@@ -94,30 +98,44 @@ class AssetDataOperator(object):
                  continue
              else:
                  if date1 > date2:
-                     asset_data2.pop(date2)
+                     position2.append(j)
                      j = j + 1
                  else:
-                     asset_data1.pop(date1)
+                     position1.append(i)
                      i = i + 1
          while i < len(asset_data1):
-             date1 = asset_data1[i][0]
-             asset_data1.pop(date1)
+             position1.append(i)
              i = i + 1
          while j <len(asset_data2):
-             date2 = asset_data2[j][0]
-             asset_data2.pop(date2)
+             position2.append(j)
              j = j + 1
+
+         # 删除不匹配的数据
+         x1 = 0
+         y1 = 0
+         for x in range(len(position1)):
+             if x > 0:
+                 position1[x] = position1[x] - x1
+             asset_data1.pop(position1[x])
+             x1 = x1 + 1
+         for y in range(len(position2)):
+             if y > 0:
+                 position2[y] = position2[y] - y1
+             asset_data2.pop(position2[y])
+             y1 = y1 + 1
+
+         return asset_data1, asset_data2
 
     # 计算资产协方差
     def compute_asset_variance(self, asset_data1, asset_data2):
 
-        asset_data11 = asset_data1.copy()
-        asset_data22 = asset_data2.copy()
+        # asset_data11 = asset_data1.copy()
+        # asset_data22 = asset_data2.copy()
 
-        self.adjust_data(asset_data11, asset_data22)  # 调整资产数据
+        asset_list1, asset_list2 = self.adjust_data(asset_data1, asset_data2)  # 调整资产数据
 
-        asset_rate1 = self.compute_asset_return_rate(asset_data11)  # 计算调整后的资产收益率
-        asset_rate2 = self.compute_asset_return_rate(asset_data22)
+        asset_rate1 = self.compute_asset_return_rate(asset_list1)  # 计算调整后的资产收益率
+        asset_rate2 = self.compute_asset_return_rate(asset_list2)
 
         asset_rate_list1 = []
         asset_rate_list2 = []

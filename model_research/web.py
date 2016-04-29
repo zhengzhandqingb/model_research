@@ -1,7 +1,6 @@
-from flask import Flask,request, render_template
+from flask import Flask, request, render_template
 from main import *
 from DateOperator import *
-import requests
 
 app = Flask(__name__)
 
@@ -50,4 +49,5 @@ def portfolio_map():
     return render_template("index.html", assets=asset_str, weights=weights_date_time, dateTime=date_time)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run()
+    # app.run(host="0.0.0.0")

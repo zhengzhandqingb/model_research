@@ -1,5 +1,6 @@
 __author__ = 'Administrator'
 import redis
+import json
 
 
 class RedisOperator(object):
@@ -14,6 +15,11 @@ class RedisOperator(object):
         key = date
         val = value
         self.write_pool[key] = val
+
+    # 将相应资产的所有数据，以一个大字符串的形式写入redis
+    def write_all(self, asset_str, asset_data_all):
+        r = redis.StrictRedis(host=self.host, port=self.port)
+        r.set(asset_str, asset_data_all)
 
     def batch_write(self):
         try:
@@ -49,6 +55,20 @@ class RedisOperator(object):
                 if  d >= startTime and d <= endTime:
                     financeData[d] = x
             return financeData
+        except Exception as exception:
+            print(exception)
+
+    def read_from_redis(self, type1, startTime, endTime):
+        try:
+            r = redis.StrictRedis(host=self.host, port=self.port)
+            oneFinanceDataSrt = r.get(type1)
+            financeStr = json.loads(oneFinanceDataSrt.decode())
+            finance_data = dict()
+            for x in range(len(financeStr)):
+                date_str = financeStr[x]['Date']
+                if  date_str >= startTime and date_str <= endTime:
+                    finance_data[date_str] = financeStr[x]['Adj_Close']
+            return finance_data
         except Exception as exception:
             print(exception)
 

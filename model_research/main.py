@@ -33,9 +33,18 @@ def updateRedis(assetType, lengh):
                 assetData[d] = x
             subAssetData.clear()
         endDateStr = dateOperator.days(startDateStr, -1)
+
+    # 做相应资产的所有数据构成一个大的字符串
+    asset_data_all_str = '['
+    i = 0
     for d, x in assetData.items():
-         redisOperator.add_write(d,assetData[d])
-    redisOperator.batch_write_hashed(assetType)
+        i = i + 1
+        asset_data_all_str = asset_data_all_str + '{' + '\"Date\"' + ':' + '\"' + d + '\"' + ',' + '\"Adj_Close\"' + ':' + '\"' + x + '\"' + '}'
+        if i < len(assetData):
+            asset_data_all_str = asset_data_all_str + ','
+    asset_data_all_str = asset_data_all_str + ']'
+    # redisOperator.batch_write_hashed(assetType)
+    redisOperator.write_all(assetType, asset_data_all_str)
 
 
 def extract_points(returns1, risks1, point_number):
@@ -116,9 +125,9 @@ def fun1(asset_type_str, end_date, year_len, point_number, point_no):
     # 获取资产数量
     start_date = dateOperator.months(end_date, -12*year_len)
 
-    for x in range(asset_type_str.__len__()):
+    for x in range(len(asset_type_str)):
         # 从redis读取数据
-        assetDatas[x] = redisOperator.read_hashed(asset_type_str[x], start_date, end_date)
+        assetDatas[x] = redisOperator.read_from_redis(asset_type_str[x], start_date, end_date)
         # 获取每个周末的收盘价
         asset_weekend_data[x] = assetDateOperator.compute_weekend_data(assetDatas[x])
         # 计算每个资产的周收益率
@@ -127,18 +136,19 @@ def fun1(asset_type_str, end_date, year_len, point_number, point_no):
         asset_expected_rate[x] = assetDateOperator.compute_expect_rate(asset_week_rate[x])
 
     # 计算协方差矩阵
+    asset_number2 = asset_number
     for x in range(asset_number):
-        for y in range(asset_number):
+        for y in range(asset_number2):
             asset_cov[x][y] = assetDateOperator.compute_asset_variance(asset_weekend_data[x], asset_weekend_data[y])
-        if x < asset_number-1:
-            continue
+        # if x < asset_number-1:
+        #     continue
 
     # 计算markowitz 优化模型
     # Turn off progress printing
     solvers.options['show_progress'] = False
 
     n = asset_number
-    N = 50
+    N = 100
     mus = [10**(5.0 * t/N - 1.0) for t in range(N)]
 
     # Convert to cvxopt matrices
@@ -178,7 +188,7 @@ def fun1(asset_type_str, end_date, year_len, point_number, point_no):
     # 提取相应序号的点的权重向量
     weight_point = extract_one_point_weight(asset_number, portfolio_return_year, portfolios, point_number, point_no)
 
-    return  weight_point
+    return weight_point
 
 
 def fun2():
